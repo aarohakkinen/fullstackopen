@@ -1,9 +1,11 @@
-import React from "react"
+import React from "react";
 
-const Numbers = ({ filteredPersons, removePerson }) => filteredPersons.map(person => 
+const Numbers = ({ filteredPersons, removePerson }) =>
+  filteredPersons.map(person => (
     <div key={person.name}>
-        {person.name} {person.number} <button onClick={() => removePerson(person)}>delete</button>
+      {person.name} {person.number}
+      <button onClick={() => removePerson(person)}>delete</button>
     </div>
-)
+  ));
 
-export default Numbers
+export default Numbers;

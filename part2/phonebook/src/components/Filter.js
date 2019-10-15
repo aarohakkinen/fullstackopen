@@ -1,5 +1,9 @@
-import React from "react"
+import React from "react";
 
-const Filter = ({ handleFilterChange }) => <div>filter shown with <input onChange={handleFilterChange} /></div>
+const Filter = ({ handleFilterChange }) => (
+  <div>
+    filter shown with <input onChange={handleFilterChange} />
+  </div>
+);
 
-export default Filter
+export default Filter;
