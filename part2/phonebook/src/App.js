@@ -1,29 +1,28 @@
-import React, { useState } from "react"
-
-const Filter = ({ newFilter, handleFilterChange }) => <div>filter shown with <input value={newFilter} onChange={handleFilterChange} /></div>
-
-const Form = ({ addPerson, newName, handleNameChange, newNumber, handleNumberChange }) => (
-    <form onSubmit={addPerson}>
-        <div>
-            name: <input value={newName} onChange={handleNameChange} />
-        </div>
-        <div>
-            number: <input value={newNumber} onChange={handleNumberChange} />
-        </div>
-        <div>
-            <button type="submit">add</button>
-        </div>
-    </form>
-)
-
-const Numbers = ({ persons }) => persons.map(person => <div key={person.name}>{person.name} {person.number}</div>)
+import React, { useState, useEffect } from "react"
+import Filter from "./components/Filter"
+import Form from "./components/Form"
+import Notification from "./components/Notification"
+import Numbers from "./components/Numbers"
+import personService from "./services/persons"
+import "./index.css"
 
 const App = () => {
-	const [persons, setPersons] = useState([{ name: "Arto Hellas", number: "040-123456" }])
-    const [filteredPersons, setFilteredPersons] = useState(persons)
+    const [filter, setFilter] = useState("")
+	const [persons, setPersons] = useState([])
+    const [filteredPersons, setFilteredPersons] = useState([])
     const [newName, setNewName] = useState("")
     const [newNumber, setNewNumber] = useState("")
-    const [newFilter, setNewFilter] = useState("")
+    const [successMessage, setSuccessMessage] = useState(null)
+    const [errorMessage, setErrorMessage] = useState(null)
+
+    useEffect(() => {
+        personService
+            .fetch()
+            .then(response => {
+                setPersons(response)
+                setFilteredPersons(response)
+            })
+    }, [])
     
     const addPerson = (event) => {
         event.preventDefault()
@@ -31,14 +30,56 @@ const App = () => {
             name: newName,
             number: newNumber
         }
-        if (persons.some(person => person.name === nameObject.name)) {
-            alert(`${newName} is already added to phonebook`)
+        const index = persons.findIndex(person => person.name === nameObject.name)
+        
+        if (index !== -1 && window.confirm(nameObject.name + " is already added to phonebook, replace the old number with a new one?")) {
+            nameObject["id"] = persons[index].id
+            personService
+                .update(nameObject)
+                .then(() => {
+                    setPersons(persons.splice(index, 1, nameObject))
+                    if (new RegExp(filter, "i").test(nameObject.name)) {
+                        setFilteredPersons(persons.filter(person => new RegExp(filter, "i").test(person.name)))
+                    }
+                    setNewName(""); setNewNumber("")
+                    setSuccessMessage(`${nameObject.name} has been successfully updated`)
+                    setTimeout(() => setSuccessMessage(null), 5000)
+                })
+                .catch(() => {
+                    setPersons(persons.filter(x => x.id !== nameObject.id))
+                    setFilteredPersons(filteredPersons.filter(x => x.id !== nameObject.id))
+                    setErrorMessage(`Information of ${nameObject.name} has already been removed from server`)
+                    setTimeout(() => setErrorMessage(null), 5000)
+                })
         } else {
-            setPersons(persons.concat(nameObject))
-            if (new RegExp(newFilter, "i").test(nameObject.name)) {
-                setFilteredPersons(filteredPersons.concat(nameObject))
-            }
-            setNewName(""); setNewNumber("")
+            personService
+                .add(nameObject)
+                .then(response => {
+                    setPersons(persons.concat(response))
+                    if (new RegExp(filter, "i").test(response.name)) {
+                        setFilteredPersons(filteredPersons.concat(response))
+                    }
+                    setNewName(""); setNewNumber("")
+                    setSuccessMessage(`${nameObject.name} has been successfully added`)
+                    setTimeout(() => setSuccessMessage(null), 5000)
+                })
+        }
+    }
+
+    const removePerson = (nameObject) => {
+        if (window.confirm("Delete " + nameObject.name + "?")) { 
+            personService
+                .remove(nameObject)
+                .then(() => {
+                    setSuccessMessage(`${nameObject.name} has been successfully removed`)
+                    setTimeout(() => setSuccessMessage(null), 5000)
+                })
+                .catch(() => {
+                    setErrorMessage(`Information of ${nameObject.name} has already been removed from server`)
+                    setTimeout(() => setErrorMessage(null), 5000)
+                })
+                setPersons(persons.filter(x => x.id !== nameObject.id))
+                setFilteredPersons(filteredPersons.filter(x => x.id !== nameObject.id))
         }
     }
 
@@ -51,20 +92,19 @@ const App = () => {
     }
 
     const handleFilterChange = (event) => {
-        setNewFilter(event.target.value)
+        setFilter(event.target.value)
         setFilteredPersons(persons.filter(person => new RegExp(event.target.value, "i").test(person.name)))
     }
 
 	return (
 		<div>
 			<h2>Phonebook</h2>
-            <Filter newFilter={newFilter} handleFilterChange={handleFilterChange} />
-
+            <Notification successMessage={successMessage} errorMessage={errorMessage} />
+            <Filter handleFilterChange={handleFilterChange} />
             <h2>Add a new</h2>
 			<Form addPerson={addPerson} newName={newName} handleNameChange={handleNameChange} newNumber={newNumber} handleNumberChange={handleNumberChange} />
-
 			<h2>Numbers</h2>
-            <Numbers persons={filteredPersons} />
+            <Numbers filteredPersons={filteredPersons} removePerson={removePerson} />
 		</div>
 	)
 }
