@@ -8,13 +8,14 @@ const app = express();
 
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.static("build"));
 morgan.token("body", function(req) {
-  if (req.method === "POST") {
-    return JSON.stringify(req.body);
-  }
+    if (req.method === "POST") {
+        return JSON.stringify(req.body);
+    }
 });
 app.use(
-  morgan(":method :url :status :res[content-length] - :response-time ms :body")
+    morgan(":method :url :status :res[content-length] - :response-time ms :body")
 );
 
 let persons = [
