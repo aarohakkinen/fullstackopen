@@ -1,1 +1,1 @@
-[https://aarohakkinen.herokuapp.com](https://aarohakkinen.herokuapp.com)
+https://aarohakkinen-fullstackopen.herokuapp.com
